@@ -8,7 +8,12 @@ export const metadata: Metadata = {
   title: 'StockBros — Trading Intelligence',
   description: 'AI-powered options and stock recommendations',
   manifest: '/manifest.json',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

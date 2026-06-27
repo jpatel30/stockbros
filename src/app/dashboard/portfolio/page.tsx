@@ -57,10 +57,10 @@ export default function PortfolioPage() {
       {/* Summary strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Net Liq',    value: fmt.dollars(pnl.total_value  || 0), cls: '' },
-          { label: 'Total P&L',  value: fmt.signed(pnl.total_pnl || 0),     cls: pnlColor(pnl.total_pnl || 0) },
-          { label: 'Cash',       value: fmt.dollars(bal.cash || 0),          cls: 'text-blue-400' },
-          { label: 'Win rate',   value: `${pnl.win_rate || 0}%`,             cls: '' },
+          { label: 'Net Liq',    value: fmt.dollars(pnl.net_liq || pnl.total_value || 0), cls: '' },
+          { label: 'Total P&L',  value: fmt.signed(pnl.total_pnl || 0), cls: pnlColor(pnl.total_pnl || 0) },
+          { label: 'Cash',       value: fmt.dollars(pnl.cash || bal.cash_balance || 0), cls: 'text-blue-400' },
+          { label: 'Win rate',   value: `${pnl.win_rate || 0}%`, cls: '' },
         ].map(({ label, value, cls }) => (
           <div key={label} className="bg-gray-900 rounded-xl p-3 border border-gray-800">
             <div className="text-xs text-gray-500 mb-1">{label}</div>
@@ -77,7 +77,7 @@ export default function PortfolioPage() {
             <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Winners</h2>
           </div>
           <div className="space-y-2 mb-5">
-            {winners.map((b: any) => <BetRow key={b.symbol} b={b} />)}
+            {winners.map((b: any, i: number) => <BetRow key={`${b.symbol}-${i}`} b={b} />)}
           </div>
         </>
       )}
@@ -90,7 +90,7 @@ export default function PortfolioPage() {
             <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Losers</h2>
           </div>
           <div className="space-y-2">
-            {losers.map((b: any) => <BetRow key={b.symbol} b={b} />)}
+            {losers.map((b: any, i: number) => <BetRow key={`${b.symbol}-${i}`} b={b} />)}
           </div>
         </>
       )}
