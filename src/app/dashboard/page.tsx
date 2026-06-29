@@ -470,20 +470,22 @@ export default function Dashboard() {
                 {prefs.scanType === 'stocks' ? 'Stock scan parameters' : 'Options scan parameters'}
               </p>
 
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
-                <p className="text-xs text-gray-500 mb-2 font-medium">Budget</p>
-                <div className="flex gap-2 flex-wrap">
-                  {[500,1000,2000,5000].map(v => (
-                    <button key={v} onClick={() => setPrefs(p => ({...p, budget:v}))}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                        prefs.budget===v ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'
-                      }`}>${v.toLocaleString()}</button>
-                  ))}
-                </div>
-              </div>
-
               {/* ── OPTIONS parameters ─────────────────────────── */}
               {prefs.scanType !== 'stocks' && (<>
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Investment amount</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[500,1000,2000,5000].map(v => (
+                      <button key={v} onClick={() => setPrefs(p => ({...p, budget:v}))}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                          prefs.budget===v ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600'
+                        }`}>${v.toLocaleString()}</button>
+                    ))}
+                    <input type="number" placeholder="Custom"
+                      onChange={e => setPrefs(p => ({...p, budget:Number(e.target.value)}))}
+                      className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-gray-400" />
+                  </div>
+                </div>
                 <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
                   <p className="text-xs text-gray-500 mb-2 font-medium">Expiry horizon</p>
                   <div className="flex gap-2 flex-wrap">
