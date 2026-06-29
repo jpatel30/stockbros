@@ -318,6 +318,7 @@ export default function Dashboard() {
   const [loadingPort, setLP]      = useState(true)
   const [fills, setFills]         = useState<string[]>([]) // tickers user confirmed filled
   const [checkingFills, setChkF]  = useState(false)
+  const [msg, setMsg]             = useState('')
   const [autoCheckCount, setACC]  = useState(0)
   const [showOpts, setShowOpts]   = useState(true)
   const [showStks, setShowStks]   = useState(true)
