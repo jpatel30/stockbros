@@ -451,7 +451,7 @@ export default function Dashboard() {
         ...(prefs.cap_size ? {cap_size: prefs.cap_size} : {}),
         ...(prefs.catalyst ? {catalyst: prefs.catalyst} : {}),
       })
-      const d = await recommendations.daily(true, prefs.budget)
+      const d = await recommendations.daily(true, prefs.budget, prefs.scanType, prefs.horizon)
       const optRecs  = d.recommendations || []
       const stkRecs  = d.stocks || []
       setRecs(optRecs)
