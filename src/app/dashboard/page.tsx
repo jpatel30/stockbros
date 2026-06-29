@@ -86,6 +86,12 @@ function OptCard({ rec }: { rec: any }) {
   const webull   = rec.webull_instructions || rec.best?.webull_instructions || ''
   const thesis   = rec.thesis || rec.reasoning || rec.best?.thesis || ''
   const inval    = rec.invalidation_conditions || rec.best?.invalidation_conditions || ''
+  const legs     = rec.legs || rec.best?.legs || []
+
+  // Format legs: "BUY $190 PUT · SELL $182.50 PUT"
+  const legsDisplay = legs.length > 0
+    ? legs.map((l: any) => `${l.action} $${Number(l.strike).toFixed(0)} ${l.type}`).join(' · ')
+    : ''
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-3 overflow-hidden">
@@ -96,6 +102,11 @@ function OptCard({ rec }: { rec: any }) {
           <span className="font-bold text-gray-900 text-base">{ticker}</span>
           <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${dirBg}`}>{dir}</span>
           <span className="text-xs text-gray-400">{strategy}</span>
+          {legsDisplay && (
+            <span className="text-xs font-mono font-semibold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-lg">
+              {legsDisplay}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-gray-400">{expDate}{dte ? ` · ${dte}d` : ''}</span>
@@ -267,8 +278,11 @@ export default function Dashboard() {
   }
 
   const bets   = port?.bets || []
-  const stocks_pos = bets.filter((b:any) => b.type === 'STOCK' || !b.type)
-  const opts_pos   = bets.filter((b:any) => b.type === 'OPTION')
+  // Detect options: type field OR symbol length > 6 (options have long symbols)
+  const isOpt  = (b: any) => b.type === 'OPTION' || (b.symbol?.length > 6 && !['GOOGL','CRWV','IONQ','MSTR','RKLB','AAOI','SNDK'].includes(b.symbol))
+  // Sort losers first within each group
+  const opts_pos   = bets.filter(isOpt).sort((a:any,b:any) => (a.pnl_pct ?? 0) - (b.pnl_pct ?? 0))
+  const stocks_pos = bets.filter((b:any) => !isOpt(b)).sort((a:any,b:any) => (a.pnl_pct ?? 0) - (b.pnl_pct ?? 0))
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -283,41 +297,29 @@ export default function Dashboard() {
         <div className="lg:w-64 bg-white border-r border-gray-200 overflow-y-auto">
           <div className="p-4">
 
-            {/* Sell signals */}
-            {sellSigs.length > 0 && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-xs font-semibold text-red-600 mb-2">⚠️ SELL SIGNALS ({sellSigs.length})</p>
-                {sellSigs.slice(0,3).map((s:any, i:number) => (
-                  <div key={`ss-${i}`} className="text-xs text-red-700 mb-0.5">
-                    <strong>{s.symbol}</strong> {s.pnl_pct?.toFixed(1)}% — {s.signals?.[0]?.slice(0,30)}
-                  </div>
-                ))}
-              </div>
-            )}
-
             {loadingPort ? (
               <div className="space-y-2 animate-pulse">
                 {[1,2,3,4,5].map(i => <div key={i} className="h-10 bg-gray-100 rounded-lg"/>)}
               </div>
             ) : (
               <>
-                {/* Stocks */}
-                {stocks_pos.length > 0 && (
+                {/* Options first (losers first) */}
+                {opts_pos.length > 0 && (
                   <div className="mb-4">
+                    <p className="text-xs font-semibold text-purple-500 uppercase tracking-wide mb-2">
+                      Options ({opts_pos.length})
+                    </p>
+                    {opts_pos.map((b:any, i:number) => <PosRow key={`o-${i}`} b={b}/>)}
+                  </div>
+                )}
+
+                {/* Stocks (losers first) */}
+                {stocks_pos.length > 0 && (
+                  <div>
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                       Stocks ({stocks_pos.length})
                     </p>
                     {stocks_pos.map((b:any, i:number) => <PosRow key={`s-${i}`} b={b}/>)}
-                  </div>
-                )}
-
-                {/* Options */}
-                {opts_pos.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                      Options ({opts_pos.length})
-                    </p>
-                    {opts_pos.map((b:any, i:number) => <PosRow key={`o-${i}`} b={b}/>)}
                   </div>
                 )}
 
@@ -434,6 +436,19 @@ export default function Dashboard() {
 
         {/* RIGHT: Alerts */}
         <div className="lg:w-60 bg-white border-l border-gray-200 p-4">
+          {/* Sell signals in alerts panel */}
+          {sellSigs.length > 0 && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-xs font-bold text-red-600 mb-2">⚠️ SELL SIGNALS ({sellSigs.length})</p>
+              {sellSigs.map((s:any, i:number) => (
+                <div key={`ss-${i}`} className="text-xs text-red-700 mb-1 leading-tight">
+                  <strong>{s.symbol}</strong> {s.pnl_pct?.toFixed(1)}%
+                  <span className="text-red-500 ml-1">— {s.signals?.[0]?.slice(0,35)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
               <Bell size={11}/> Alerts
