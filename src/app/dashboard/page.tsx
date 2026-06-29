@@ -101,15 +101,15 @@ function OptPosRow({ b }: { b: any }) {
 function OptCard({ rec }: { rec: any }) {
   const [open, setOpen] = useState(false)
   const dir = rec.direction
-  const DirIcon = dir === 'BULLISH' ? TrendingUp : dir === 'BEARISH' ? TrendingDown : Minus
-  const dirCls  = dir === 'BULLISH' ? 'text-emerald-600' : dir === 'BEARISH' ? 'text-red-500' : 'text-gray-400'
-  const dirBg   = dir === 'BULLISH' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                : dir === 'BEARISH' ? 'bg-red-50 text-red-700 border-red-200'
+  const DirIcon = optDir === 'BULLISH' ? TrendingUp : optDir === 'BEARISH' ? TrendingDown : Minus
+  const dirCls  = optDir === 'BULLISH' ? 'text-emerald-600' : optDir === 'BEARISH' ? 'text-red-500' : 'text-gray-400'
+  const dirBg   = optDir === 'BULLISH' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : optDir === 'BEARISH' ? 'bg-red-50 text-red-700 border-red-200'
                 : 'bg-gray-50 text-gray-600 border-gray-200'
 
   // Direct field mapping from smart_engine output (verified from actual response)
   const ticker    = rec.ticker || ''
-  const dir       = rec.direction || ''
+  const optDir    = rec.direction || ''
   const expDate   = rec.expiry || ''
   const dte       = rec.dte || ''
   const strategy  = (rec.strategy || '').replace(/_/g,' ')
@@ -138,7 +138,7 @@ function OptCard({ rec }: { rec: any }) {
   const leg2 = legs[1] || {}
   const leg1Mid = Number(leg1.mid || 0).toFixed(2)
   const leg2Mid = Number(leg2.mid || 0).toFixed(2)
-  const spread   = rec.spread_width || Math.abs((leg1.strike||0)-(leg2.strike||0))''
+  const spread   = rec.spread_width || Math.abs((leg1.strike||0)-(leg2.strike||0))
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-3 overflow-hidden">
@@ -147,7 +147,7 @@ function OptCard({ rec }: { rec: any }) {
         <div className="flex items-center gap-2">
           <DirIcon size={15} className={dirCls} />
           <span className="font-bold text-gray-900 text-base">{ticker}</span>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${dirBg}`}>{dir}</span>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${dirBg}`}>{optDir}</span>
           <span className="text-xs text-gray-400">{strategy}</span>
           {legsDisplay && (
             <span className="text-xs font-mono font-semibold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-lg">
