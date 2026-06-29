@@ -107,29 +107,38 @@ function OptCard({ rec }: { rec: any }) {
                 : dir === 'BEARISH' ? 'bg-red-50 text-red-700 border-red-200'
                 : 'bg-gray-50 text-gray-600 border-gray-200'
 
-  const expDate  = rec.expiry || ''
-  const dte      = rec.best?.dte || rec.dte || ''
-  const strategy = (rec.strategy || rec.best?.strategy || '').replace(/_/g,' ')
-  const cost     = rec.entry_debit || rec.total_cost || rec.best?.entry_debit || 0
-  const maxLoss  = rec.max_loss  || rec.best?.max_loss  || 0
-  const maxGain  = rec.max_profit || rec.best?.max_profit || 0
-  const rr       = rec.risk_reward || rec.best?.risk_reward || 0
-  const tgt      = rec.target_price || rec.best?.target_price || 0
-  const tgtPct   = rec.target_pct  || rec.best?.target_pct  || 0
-  const stop     = rec.stop_price  || rec.best?.stop_price  || 0
-  const entry    = rec.entry_zone_low  || rec.best?.entry_zone_low  || 0
-  const entryH   = rec.entry_zone_high || rec.best?.entry_zone_high || 0
-  const ticker   = rec.ticker || rec.best?.ticker || ''
-  const conf     = rec.confidence || rec.conviction_score || rec.best?.confidence || 0
-  const webull   = rec.webull_instructions || rec.best?.webull_instructions || ''
-  const thesis   = rec.thesis || rec.reasoning || rec.best?.thesis || ''
-  const inval    = rec.invalidation_conditions || rec.best?.invalidation_conditions || ''
-  const legs     = rec.legs || rec.best?.legs || []
+  // Direct field mapping from smart_engine output (verified from actual response)
+  const ticker    = rec.ticker || ''
+  const dir       = rec.direction || ''
+  const expDate   = rec.expiry || ''
+  const dte       = rec.dte || ''
+  const strategy  = (rec.strategy || '').replace(/_/g,' ')
+  const conf      = rec.confidence || rec.conviction_score || 0
+  const legs      = rec.legs || []
 
-  // Format legs: "BUY $190 PUT · SELL $182.50 PUT"
+  // Cost display: webull_limit_price is the actual order price
+  const limitPx   = rec.webull_limit_price || 0
+  const costPerCtr = Math.abs(limitPx) * 100  // per contract in dollars
+  const maxLoss   = Math.abs(rec.max_loss_per_contract || 0)
+  const maxGain   = rec.max_profit_per_contract || 0
+  const rr        = rec.risk_reward || 0
+  const webull    = rec.webull_instructions || ''
+  const thesis    = rec.reasoning || rec.thesis || ''
+  const inval     = rec.key_risk || rec.invalidation_conditions || ''
+  const catalyst  = rec.catalyst || ''
+
+  // Legs display: "BUY $730P · SELL $720P"
   const legsDisplay = legs.length > 0
-    ? legs.map((l: any) => `${l.action} $${Number(l.strike).toFixed(0)} ${l.type}`).join(' · ')
+    ? legs.map((l: any) => `${l.action} $${Number(l.strike).toFixed(0)} ${l.type?.[0]||''}`)
+          .join(' · ')
     : ''
+
+  // Greeks from first leg
+  const leg1 = legs[0] || {}
+  const leg2 = legs[1] || {}
+  const leg1Mid = Number(leg1.mid || 0).toFixed(2)
+  const leg2Mid = Number(leg2.mid || 0).toFixed(2)
+  const spread   = rec.spread_width || Math.abs((leg1.strike||0)-(leg2.strike||0))''
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-3 overflow-hidden">
@@ -156,38 +165,54 @@ function OptCard({ rec }: { rec: any }) {
 
       {/* Key numbers */}
       <div className="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100">
-        {[
-          { l: 'Entry debit', v: cost > 0 ? `$${cost.toFixed(2)}/sh` : '—' },
-          { l: 'Max loss',    v: maxLoss  ? dollars(Math.abs(maxLoss)) : '—', c: 'text-red-500' },
-          { l: 'Max gain',    v: maxGain  ? dollars(maxGain)            : '—', c: 'text-emerald-600' },
-          { l: 'R:R',         v: rr ? `${rr.toFixed(1)}x` : '—' },
-        ].map(({ l, v, c }) => (
-          <div key={l} className="px-3 py-2 text-center">
-            <div className="text-xs text-gray-400">{l}</div>
-            <div className={`text-sm font-bold ${c || 'text-gray-900'}`}>{v}</div>
+        <div className="px-3 py-2 text-center">
+          <div className="text-xs text-gray-400">Limit price</div>
+          <div className="text-sm font-bold text-gray-900">
+            {limitPx ? `$${Math.abs(limitPx).toFixed(2)}/sh` : '—'}
           </div>
-        ))}
+        </div>
+        <div className="px-3 py-2 text-center">
+          <div className="text-xs text-gray-400">Max loss/ctr</div>
+          <div className="text-sm font-bold text-red-500">{maxLoss ? `$${maxLoss.toFixed(0)}` : '—'}</div>
+        </div>
+        <div className="px-3 py-2 text-center">
+          <div className="text-xs text-gray-400">Max gain/ctr</div>
+          <div className="text-sm font-bold text-emerald-600">{maxGain ? `$${maxGain.toFixed(0)}` : '—'}</div>
+        </div>
+        <div className="px-3 py-2 text-center">
+          <div className="text-xs text-gray-400">R:R</div>
+          <div className="text-sm font-bold text-gray-900">{rr ? `${rr.toFixed(1)}x` : '—'}</div>
+        </div>
       </div>
 
-      {/* Entry zone + targets */}
-      <div className="grid grid-cols-3 gap-2 px-4 py-3 bg-gray-50 border-b border-gray-100">
-        <div className="text-xs">
-          <span className="text-gray-400 block mb-0.5">Entry zone</span>
-          <span className="font-semibold text-gray-900">
-            {entry ? `$${entry} – $${entryH}` : '—'}
-          </span>
+      {/* Leg details + greeks */}
+      {legs.length > 0 && (
+        <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+          {legs.map((l: any, i: number) => (
+            <div key={i} className="flex items-center justify-between text-xs mb-1 last:mb-0">
+              <div className="flex items-center gap-2">
+                <span className={`font-bold px-1.5 py-0.5 rounded text-xs ${
+                  l.action === 'BUY' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                }`}>{l.action}</span>
+                <span className="font-semibold text-gray-900">
+                  ${Number(l.strike).toFixed(0)} {l.type}
+                </span>
+                <span className="text-gray-400">exp {l.expiry || expDate}</span>
+              </div>
+              <div className="text-right text-gray-500">
+                ${Number(l.mid||0).toFixed(2)} mid
+                {l.delta ? ` · Δ${l.delta.toFixed(3)}` : ''}
+                {l.iv ? ` · IV ${(l.iv*100).toFixed(0)}%` : ''}
+              </div>
+            </div>
+          ))}
+          {spread > 0 && (
+            <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-200">
+              Spread width: ${Number(spread).toFixed(1)} · Expiry: {expDate} ({dte}d)
+            </div>
+          )}
         </div>
-        <div className="text-xs">
-          <span className="text-gray-400 block mb-0.5">Target</span>
-          <span className="font-semibold text-emerald-600">
-            {tgt ? `$${tgt.toFixed(0)} (${tgtPct > 0 ? '+' : ''}${tgtPct?.toFixed(1)}%)` : '—'}
-          </span>
-        </div>
-        <div className="text-xs">
-          <span className="text-gray-400 block mb-0.5">Stop</span>
-          <span className="font-semibold text-red-500">{stop ? `$${stop.toFixed(0)}` : '—'}</span>
-        </div>
-      </div>
+      )}
 
       {/* Webull instructions */}
       {webull && (
@@ -196,12 +221,11 @@ function OptCard({ rec }: { rec: any }) {
         </div>
       )}
 
-      {/* Thesis */}
-      {thesis && (
-        <div className="px-4 py-3">
-          <p className="text-xs text-gray-600 leading-relaxed">{thesis.slice(0, 180)}{thesis.length > 180 ? '...' : ''}</p>
-        </div>
-      )}
+      {/* Thesis + catalyst */}
+      <div className="px-4 py-3">
+        {thesis && <p className="text-xs text-gray-600 leading-relaxed mb-1">{thesis}</p>}
+        {catalyst && <p className="text-xs text-blue-600">📌 {catalyst}</p>}
+      </div>
 
       {/* Expand */}
       {inval && (
@@ -293,6 +317,9 @@ export default function Dashboard() {
   const [prefs, setPrefs]         = useState<Prefs>(DEFAULT)
   const [stage, setStage]         = useState<'form'|'scanning'|'results'>('form')
   const [loadingPort, setLP]      = useState(true)
+  const [fills, setFills]         = useState<string[]>([]) // tickers user confirmed filled
+  const [checkingFills, setChkF]  = useState(false)
+  const [autoCheckCount, setACC]  = useState(0)
   const [showOpts, setShowOpts]   = useState(true)
   const [showStks, setShowStks]   = useState(true)
   const [showSigs, setShowSigs]   = useState(true)
@@ -313,11 +340,35 @@ export default function Dashboard() {
   const dismissAlert = (id: string) => { alertsApi.dismiss(id); setAlerts(a => a.filter(x => x.id !== id)) }
   const runScan = async () => {
     setStage('scanning')
+    // Refresh portfolio in parallel with scan
+    portfolio.get(true).then(setPort).catch(() => {})
+
     try {
       const d = await recommendations.daily(true)
       setRecs(d.recommendations || [])
       if (d.stocks?.length) setStocks(d.stocks)
       setStage((d.recommendations?.length || d.stocks?.length) ? 'results' : 'form')
+
+      // Start auto-checking for fills every 30s for 30 min (60 checks)
+      setAutoCheckCount(0)
+      const checkInterval = setInterval(async () => {
+        setAutoCheckCount(c => {
+          if (c >= 60) { clearInterval(checkInterval); return c }
+          return c + 1
+        })
+        try {
+          const fillData = await fetch('/api/portfolio/check-fills', {
+            headers: { Authorization: `Bearer ${document.cookie.match(/token=([^;]+)/)?.[1] || ''}` }
+          }).then(r => r.json())
+          if (fillData.new_fills?.length > 0) {
+            fillData.new_fills.forEach((f: any) => {
+              setFills(prev => [...new Set([...prev, f.ticker])])
+            })
+            clearInterval(checkInterval)
+            portfolio.get(true).then(setPort)
+          }
+        } catch {}
+      }, 30000)
     } catch { setStage('form') }
   }
 
@@ -461,6 +512,50 @@ export default function Dashboard() {
                   <RotateCcw size={11}/> Rescan
                 </button>
               </div>
+
+              {/* Fill confirmation */}
+              {recs.length > 0 && fills.length === 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4">
+                  <p className="text-xs font-semibold text-amber-800 mb-2">
+                    Did you enter any of these trades?
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    {recs.map((r: any) => (
+                      <button key={r.ticker}
+                        onClick={async () => {
+                          setFills(prev => [...prev, r.ticker])
+                          await fetch(`http://localhost:8001/api/execution/confirm`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${document.cookie.match(/token=([^;]+)/)?.[1]||''}`
+                            },
+                            body: JSON.stringify({ symbol: r.ticker, entry_price: 0, qty: 1 })
+                          })
+                          portfolio.get(true).then(setPort)
+                        }}
+                        className="px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-medium text-amber-800 hover:bg-amber-100 transition">
+                        ✅ Filled {r.ticker}
+                      </button>
+                    ))}
+                    <button onClick={() => setFills(['SKIPPED'])}
+                      className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg transition">
+                      Not yet
+                    </button>
+                  </div>
+                  {autoCheckCount > 0 && fills.length === 0 && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      🔄 Auto-checking portfolio for new positions...
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {fills.filter(f => f !== 'SKIPPED').length > 0 && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-xs text-emerald-700">
+                  ✅ Tracking: {fills.filter(f => f !== 'SKIPPED').join(', ')} — monitoring for alerts
+                </div>
+              )}
 
               {/* Options */}
               {recs.length > 0 && (

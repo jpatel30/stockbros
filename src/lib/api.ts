@@ -73,6 +73,10 @@ export const stockRecs = {
     api.get(`/api/recommendations/stocks${budget ? `?budget=${budget}` : ''}`).then(r => r.data),
 }
 
+export const checkFills = {
+  check: () => api.get('/api/portfolio/check-fills').then(r => r.data),
+}
+
 export const execution = {
   confirm: (symbol: string, entry_price: number, qty: number) =>
     api.post('/api/execution/confirm', { symbol, entry_price, qty }).then(r => r.data),
