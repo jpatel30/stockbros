@@ -344,31 +344,21 @@ export default function Dashboard() {
 
     try {
       const d = await recommendations.daily(true)
-      setRecs(d.recommendations || [])
-      if (d.stocks?.length) setStocks(d.stocks)
-      setStage((d.recommendations?.length || d.stocks?.length) ? 'results' : 'form')
-
-      // Start auto-checking for fills every 30s for 30 min (60 checks)
-      setAutoCheckCount(0)
-      const checkInterval = setInterval(async () => {
-        setAutoCheckCount(c => {
-          if (c >= 60) { clearInterval(checkInterval); return c }
-          return c + 1
-        })
-        try {
-          const fillData = await fetch('/api/portfolio/check-fills', {
-            headers: { Authorization: `Bearer ${document.cookie.match(/token=([^;]+)/)?.[1] || ''}` }
-          }).then(r => r.json())
-          if (fillData.new_fills?.length > 0) {
-            fillData.new_fills.forEach((f: any) => {
-              setFills(prev => [...new Set([...prev, f.ticker])])
-            })
-            clearInterval(checkInterval)
-            portfolio.get(true).then(setPort)
-          }
-        } catch {}
-      }, 30000)
-    } catch { setStage('form') }
+      const optRecs  = d.recommendations || []
+      const stkRecs  = d.stocks || []
+      setRecs(optRecs)
+      if (stkRecs.length) setStocks(stkRecs)
+      setMsg(d.market_view || '')
+      if (optRecs.length > 0 || stkRecs.length > 0) {
+        setStage('results')
+      } else {
+        setMsg('No high-conviction picks today — SPY/QQQ used as fallback')
+        setStage('form')
+      }
+    } catch (err) {
+      console.error('Scan error:', err)
+      setStage('form')
+    }
   }
 
   const bets   = port?.bets || []
