@@ -100,7 +100,7 @@ function OptPosRow({ b }: { b: any }) {
 // ── Options Card ──────────────────────────────────────────────────────────────
 function OptCard({ rec }: { rec: any }) {
   const [open, setOpen] = useState(false)
-  const dir = rec.direction
+  const optDir    = rec.direction || ''
   const DirIcon = optDir === 'BULLISH' ? TrendingUp : optDir === 'BEARISH' ? TrendingDown : Minus
   const dirCls  = optDir === 'BULLISH' ? 'text-emerald-600' : optDir === 'BEARISH' ? 'text-red-500' : 'text-gray-400'
   const dirBg   = optDir === 'BULLISH' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -109,7 +109,6 @@ function OptCard({ rec }: { rec: any }) {
 
   // Direct field mapping from smart_engine output (verified from actual response)
   const ticker    = rec.ticker || ''
-  const optDir    = rec.direction || ''
   const expDate   = rec.expiry || ''
   const dte       = rec.dte || ''
   const strategy  = (rec.strategy || '').replace(/_/g,' ')
