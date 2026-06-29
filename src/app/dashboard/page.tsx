@@ -524,13 +524,17 @@ export default function Dashboard() {
                       <button key={r.ticker}
                         onClick={async () => {
                           setFills(prev => [...prev, r.ticker])
+                          // Find actual position price from portfolio
+                          const pos = (port?.bets || []).find((b:any) => b.symbol === r.ticker)
+                          const entryPrice = pos?.unit_cost || pos?.last_price || 0
+                          const qty = pos?.qty || 1
                           await fetch(`http://localhost:8001/api/execution/confirm`, {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
                               'Authorization': `Bearer ${document.cookie.match(/token=([^;]+)/)?.[1]||''}`
                             },
-                            body: JSON.stringify({ symbol: r.ticker, entry_price: 0, qty: 1 })
+                            body: JSON.stringify({ symbol: r.ticker, entry_price: entryPrice, qty })
                           })
                           portfolio.get(true).then(setPort)
                         }}
