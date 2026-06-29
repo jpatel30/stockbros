@@ -116,7 +116,11 @@ function OptCard({ rec }: { rec: any }) {
   const spread   = rec.spread_width || Math.abs((leg1.strike||0)-(leg2.strike||0))
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-3 overflow-hidden">
+    <div className={`rounded-2xl border shadow-sm mb-3 overflow-hidden ${
+      rec.status === 'BROKEN'
+        ? 'bg-gray-50 border-gray-200 opacity-60'
+        : 'bg-white border-gray-200'
+    }`}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
@@ -124,6 +128,20 @@ function OptCard({ rec }: { rec: any }) {
           <span className="font-bold text-gray-900 text-base">{ticker}</span>
           <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${dirBg}`}>{optDir}</span>
           <span className="text-xs text-gray-400">{strategy}</span>
+          {/* Status badge */}
+          {rec.status && rec.status !== 'NEW' && (
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+              rec.status === 'INTACT'  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+              rec.status === 'UPDATED' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+              rec.status === 'BROKEN'  ? 'bg-red-50 text-red-500 border border-red-200' :
+              'bg-gray-50 text-gray-500'
+            }`}>
+              {rec.status === 'INTACT' ? '✅ INTACT' : rec.status === 'UPDATED' ? '⬆️ STRONGER' : '❌ BROKEN'}
+            </span>
+          )}
+          {rec.status === 'NEW' && (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">🆕 NEW</span>
+          )}
           {legsDisplay && (
             <span className="text-xs font-mono font-semibold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-lg">
               {legsDisplay}
@@ -196,8 +214,15 @@ function OptCard({ rec }: { rec: any }) {
         </div>
       )}
 
-      {/* Thesis + catalyst */}
+      {/* Status reason + Thesis + catalyst */}
       <div className="px-4 py-3">
+        {rec.status_reason && (
+          <p className={`text-xs font-medium mb-1.5 ${
+            rec.status === 'INTACT'  ? 'text-emerald-600' :
+            rec.status === 'UPDATED' ? 'text-blue-600' :
+            rec.status === 'BROKEN'  ? 'text-red-500' : 'text-purple-600'
+          }`}>→ {rec.status_reason}</p>
+        )}
         {thesis && <p className="text-xs text-gray-600 leading-relaxed mb-1">{thesis}</p>}
         {catalyst && <p className="text-xs text-blue-600">📌 {catalyst}</p>}
       </div>
@@ -307,8 +332,24 @@ export default function Dashboard() {
     stockRecs.get(5000).then(d => setStocks(d?.stocks || [])).catch(() => {})
     signals.sell().then(s => setSellSigs(s?.filter((x:any) => x.signals?.length > 0) || [])).catch(() => {})
     recommendations.daily().then(d => {
-      if (d.recommendations?.length) { setRecs(d.recommendations); setStage('results') }
-      if (d.stocks?.length) setStocks(d.stocks)
+      if (d.recommendations?.length) {
+        setRecs(d.recommendations)
+        if (d.stocks?.length) setStocks(d.stocks)
+        setStage('results')
+
+        // Auto-rescan if: market open AND last scan > 2 hours ago
+        const lastScan  = d.recommendations[0]?.scan_time || ''
+        const now       = new Date()
+        const etHour    = (now.getUTCHours() - 4 + 24) % 24  // ET = UTC-4
+        const marketOpen = etHour >= 9 && etHour < 16
+        const scanAge   = lastScan
+          ? (now.getTime() - new Date(lastScan).getTime()) / 1000 / 60  // minutes
+          : 999
+        if (marketOpen && scanAge > 120) {
+          console.log(`Auto-rescan: scan is ${scanAge.toFixed(0)}m old, market open`)
+          setTimeout(runScan, 2000)  // slight delay so page loads first
+        }
+      }
     }).catch(() => {})
   }, [])
 
@@ -320,6 +361,13 @@ export default function Dashboard() {
     portfolio.get(true).then(setPort).catch(() => {})
 
     try {
+      const params = new URLSearchParams({
+        force_refresh: 'true',
+        budget: String(prefs.budget),
+        ...(prefs.sector   ? {sector:   prefs.sector}   : {}),
+        ...(prefs.cap_size ? {cap_size: prefs.cap_size} : {}),
+        ...(prefs.catalyst ? {catalyst: prefs.catalyst} : {}),
+      })
       const d = await recommendations.daily(true, prefs.budget)
       const optRecs  = d.recommendations || []
       const stkRecs  = d.stocks || []
@@ -448,6 +496,34 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* No-watchlist criteria (required if no watchlist) */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
+                <p className="text-xs text-gray-500 mb-2 font-medium">Focus scan (required if no watchlist)</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <select value={prefs.sector} onChange={e => setPrefs(p => ({...p, sector: e.target.value}))}
+                    className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400">
+                    <option value="">Sector</option>
+                    {['tech','energy','finance','healthcare','consumer','all'].map(v => (
+                      <option key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</option>
+                    ))}
+                  </select>
+                  <select value={prefs.cap_size} onChange={e => setPrefs(p => ({...p, cap_size: e.target.value}))}
+                    className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400">
+                    <option value="">Market Cap</option>
+                    {[['large','Large (>$10B)'],['mid','Mid ($1-10B)'],['any','Any']].map(([v,l]) => (
+                      <option key={v} value={v}>{l}</option>
+                    ))}
+                  </select>
+                  <select value={prefs.catalyst} onChange={e => setPrefs(p => ({...p, catalyst: e.target.value}))}
+                    className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400">
+                    <option value="">Catalyst</option>
+                    {[['momentum','Momentum'],['earnings','Earnings'],['breakout','Breakout'],['any','Any']].map(([v,l]) => (
+                      <option key={v} value={v}>{l}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <button onClick={runScan}
