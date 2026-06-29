@@ -17,6 +17,14 @@ export default function WatchlistPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [detail, setDetail]     = useState<any>(null)
   const [loadingDetail, setLD]  = useState(false)
+  const [criteria, setCriteria] = useState<any>({sector:'',cap:'',catalyst:''})
+  const [savedCriteria, setSaved] = useState<any>(null)
+
+  const saveCriteria = () => {
+    // Save to localStorage for picks tab to use
+    localStorage.setItem('scan_criteria', JSON.stringify(criteria))
+    setSaved(criteria)
+  }
 
   useEffect(() => {
     wlApi.get().then((d: any) => setTickers(d.tickers || []))
@@ -149,6 +157,46 @@ export default function WatchlistPage() {
             <div className="px-4 py-6 text-center text-xs text-gray-400 animate-pulse">
               Loading data...
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Criteria form — only shown when watchlist is empty */}
+      {!loading && tickers.length === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-5">
+          <p className="font-semibold text-blue-900 text-sm mb-1">📋 Your watchlist is empty</p>
+          <p className="text-xs text-blue-700 mb-4">
+            Add tickers below, or set scan criteria so the system knows what universe to search.
+            These criteria are used when you click "Find Best Picks" on the Picks tab.
+          </p>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {[
+              {label:'Sector', key:'sector', opts:[['tech','Tech'],['energy','Energy'],['finance','Finance'],['healthcare','Healthcare'],['consumer','Consumer'],['all','All']]},
+              {label:'Market Cap', key:'cap', opts:[['large','Large (>$10B)'],['mid','Mid ($1-10B)'],['any','Any']]},
+              {label:'Catalyst', key:'catalyst', opts:[['momentum','Momentum'],['earnings','Earnings this week'],['breakout','Breakout'],['any','Any']]},
+            ].map(({label,key,opts}) => (
+              <div key={key}>
+                <p className="text-xs text-blue-600 font-medium mb-1">{label}</p>
+                <select
+                  value={(criteria as any)[key] || ''}
+                  onChange={e => setCriteria((c:any) => ({...c, [key]: e.target.value}))}
+                  className="w-full border border-blue-200 bg-white rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-500">
+                  <option value="">Select...</option>
+                  {opts.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+          <button
+            disabled={!criteria.sector || !criteria.cap || !criteria.catalyst}
+            onClick={saveCriteria}
+            className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition">
+            Save Criteria
+          </button>
+          {savedCriteria && (
+            <p className="text-xs text-emerald-600 mt-2 text-center">
+              ✅ Saved: {savedCriteria.sector} / {savedCriteria.cap} / {savedCriteria.catalyst}
+            </p>
           )}
         </div>
       )}

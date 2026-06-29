@@ -466,12 +466,17 @@ export default function Dashboard() {
               </div>
 
               <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
-                <p className="text-xs text-gray-500 mb-2 font-medium">Horizon</p>
+                <p className="text-xs text-gray-500 mb-2 font-medium">Time horizon</p>
                 <div className="flex gap-2 flex-wrap">
-                  {HORIZONS.map(({v,l}) => (
+                  {(prefs.scanType === 'stocks'
+                    ? [{v:'3m',l:'3 Month'},{v:'6m',l:'6 Month'},{v:'1yr',l:'1 Year'}]
+                    : [{v:'1w',l:'1 Week'},{v:'2w',l:'2 Week'},{v:'1m',l:'1 Month'},{v:'3m',l:'3 Month'}]
+                  ).map(({v,l}) => (
                     <button key={v} onClick={() => setPrefs(p => ({...p, horizon:v}))}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                        prefs.horizon===v ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                        prefs.horizon===v
+                          ? (prefs.scanType==='stocks' ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-900 text-white border-gray-900')
+                          : 'border-gray-200 text-gray-600 hover:border-gray-400'
                       }`}>{l}</button>
                   ))}
                 </div>
@@ -498,37 +503,10 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              {/* No-watchlist criteria (required if no watchlist) */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
-                <p className="text-xs text-gray-500 mb-2 font-medium">Focus scan (required if no watchlist)</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <select value={prefs.sector} onChange={e => setPrefs(p => ({...p, sector: e.target.value}))}
-                    className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400">
-                    <option value="">Sector</option>
-                    {['tech','energy','finance','healthcare','consumer','all'].map(v => (
-                      <option key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</option>
-                    ))}
-                  </select>
-                  <select value={prefs.cap_size} onChange={e => setPrefs(p => ({...p, cap_size: e.target.value}))}
-                    className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400">
-                    <option value="">Market Cap</option>
-                    {[['large','Large (>$10B)'],['mid','Mid ($1-10B)'],['any','Any']].map(([v,l]) => (
-                      <option key={v} value={v}>{l}</option>
-                    ))}
-                  </select>
-                  <select value={prefs.catalyst} onChange={e => setPrefs(p => ({...p, catalyst: e.target.value}))}
-                    className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400">
-                    <option value="">Catalyst</option>
-                    {[['momentum','Momentum'],['earnings','Earnings'],['breakout','Breakout'],['any','Any']].map(([v,l]) => (
-                      <option key={v} value={v}>{l}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
               <button onClick={runScan}
                 className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-2xl flex items-center justify-center gap-2 text-sm transition shadow-sm">
-                <Search size={15}/> Find Best Picks
+                {prefs.scanType === "stocks" ? <><span>🏢</span> Find Best Stocks</> : <><Search size={15}/> Find Best Options</>}
               </button>
             </div>
           )}
