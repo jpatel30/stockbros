@@ -59,6 +59,44 @@ function PosRow({ b }: { b: any }) {
   )
 }
 
+// ── Option Position Row (portfolio) ──────────────────────────────────────────
+function OptPosRow({ b }: { b: any }) {
+  const abs    = pnlAbs(b)
+  const pp     = b.pnl_pct ?? 0
+  // Webull option symbol: "GLD Jul10 2026 165.00 P" or similar
+  const sym    = b.symbol || ''
+  const parts  = sym.split(' ')
+  const ticker = parts[0] || sym
+  const expiry = parts.length > 1 ? parts.slice(1,3).join(' ') : ''
+  const strike = parts.find((p:string) => !isNaN(Number(p))) || b.strike_price || ''
+  const optType= parts.slice(-1)[0]?.toUpperCase() === 'P' ? 'PUT'
+               : parts.slice(-1)[0]?.toUpperCase() === 'C' ? 'CALL' : ''
+
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+      <div>
+        <div className="flex items-center gap-1.5">
+          <span className="font-semibold text-gray-900 text-sm">{ticker}</span>
+          {optType && (
+            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+              optType === 'CALL' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+            }`}>{optType}</span>
+          )}
+        </div>
+        <div className="text-xs text-gray-400 mt-0.5">
+          {b.qty} ctr
+          {strike ? ` · $${Number(strike).toFixed(0)}` : ''}
+          {expiry ? ` · ${expiry}` : ''}
+        </div>
+      </div>
+      <div className="text-right">
+        <div className={`text-sm font-bold ${clrPct(pp)}`}>{pct(pp)}</div>
+        <div className={`text-xs ${clrPnl(abs)}`}>{signed(abs)}</div>
+      </div>
+    </div>
+  )
+}
+
 // ── Options Card ──────────────────────────────────────────────────────────────
 function OptCard({ rec }: { rec: any }) {
   const [open, setOpen] = useState(false)
@@ -255,6 +293,10 @@ export default function Dashboard() {
   const [prefs, setPrefs]         = useState<Prefs>(DEFAULT)
   const [stage, setStage]         = useState<'form'|'scanning'|'results'>('form')
   const [loadingPort, setLP]      = useState(true)
+  const [showOpts, setShowOpts]   = useState(true)
+  const [showStks, setShowStks]   = useState(true)
+  const [showSigs, setShowSigs]   = useState(true)
+  const [showAlts, setShowAlts]   = useState(true)
 
   useEffect(() => {
     portfolio.get(false).then(setPort).finally(() => setLP(false))
@@ -263,6 +305,7 @@ export default function Dashboard() {
     signals.sell().then(s => setSellSigs(s?.filter((x:any) => x.signals?.length > 0) || [])).catch(() => {})
     recommendations.daily().then(d => {
       if (d.recommendations?.length) { setRecs(d.recommendations); setStage('results') }
+      if (d.stocks?.length) setStocks(d.stocks)
     }).catch(() => {})
   }, [])
 
@@ -273,16 +316,16 @@ export default function Dashboard() {
     try {
       const d = await recommendations.daily(true)
       setRecs(d.recommendations || [])
-      setStage(d.recommendations?.length ? 'results' : 'form')
+      if (d.stocks?.length) setStocks(d.stocks)
+      setStage((d.recommendations?.length || d.stocks?.length) ? 'results' : 'form')
     } catch { setStage('form') }
   }
 
   const bets   = port?.bets || []
-  // Detect options: type field OR symbol length > 6 (options have long symbols)
-  const isOpt  = (b: any) => b.type === 'OPTION' || (b.symbol?.length > 6 && !['GOOGL','CRWV','IONQ','MSTR','RKLB','AAOI','SNDK'].includes(b.symbol))
-  // Sort losers first within each group
-  const opts_pos   = bets.filter(isOpt).sort((a:any,b:any) => (a.pnl_pct ?? 0) - (b.pnl_pct ?? 0))
-  const stocks_pos = bets.filter((b:any) => !isOpt(b)).sort((a:any,b:any) => (a.pnl_pct ?? 0) - (b.pnl_pct ?? 0))
+  // Use type field (fixed in API to merge from pnl.positions)
+  const isOpt      = (b: any) => b.type === 'OPTION'
+  const opts_pos   = bets.filter(isOpt).sort((a:any,b:any) => (a.pnl_pct??0)-(b.pnl_pct??0))
+  const stocks_pos = bets.filter((b:any) => !isOpt(b)).sort((a:any,b:any) => (a.pnl_pct??0)-(b.pnl_pct??0))
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -306,20 +349,28 @@ export default function Dashboard() {
                 {/* Options first (losers first) */}
                 {opts_pos.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-xs font-semibold text-purple-500 uppercase tracking-wide mb-2">
-                      Options ({opts_pos.length})
-                    </p>
-                    {opts_pos.map((b:any, i:number) => <PosRow key={`o-${i}`} b={b}/>)}
+                    <button onClick={() => setShowOpts(v => !v)}
+                      className="flex items-center justify-between w-full mb-2">
+                      <span className="text-xs font-semibold text-purple-500 uppercase tracking-wide">
+                        Options ({opts_pos.length})
+                      </span>
+                      <span className="text-xs text-gray-400">{showOpts ? '▲' : '▼'}</span>
+                    </button>
+                    {showOpts && opts_pos.map((b:any, i:number) => <OptPosRow key={`o-${i}`} b={b}/>)}
                   </div>
                 )}
 
                 {/* Stocks (losers first) */}
                 {stocks_pos.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                      Stocks ({stocks_pos.length})
-                    </p>
-                    {stocks_pos.map((b:any, i:number) => <PosRow key={`s-${i}`} b={b}/>)}
+                    <button onClick={() => setShowStks(v => !v)}
+                      className="flex items-center justify-between w-full mb-2">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        Stocks ({stocks_pos.length})
+                      </span>
+                      <span className="text-xs text-gray-400">{showStks ? '▲' : '▼'}</span>
+                    </button>
+                    {showStks && stocks_pos.map((b:any, i:number) => <PosRow key={`s-${i}`} b={b}/>)}
                   </div>
                 )}
 
@@ -439,8 +490,12 @@ export default function Dashboard() {
           {/* Sell signals in alerts panel */}
           {sellSigs.length > 0 && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-xs font-bold text-red-600 mb-2">⚠️ SELL SIGNALS ({sellSigs.length})</p>
-              {sellSigs.map((s:any, i:number) => (
+              <button onClick={() => setShowSigs(v => !v)}
+                className="flex items-center justify-between w-full mb-1">
+                <span className="text-xs font-bold text-red-600">⚠️ SELL ({sellSigs.length})</span>
+                <span className="text-xs text-red-400">{showSigs ? '▲' : '▼'}</span>
+              </button>
+              {showSigs && sellSigs.map((s:any, i:number) => (
                 <div key={`ss-${i}`} className="text-xs text-red-700 mb-1 leading-tight">
                   <strong>{s.symbol}</strong> {s.pnl_pct?.toFixed(1)}%
                   <span className="text-red-500 ml-1">— {s.signals?.[0]?.slice(0,35)}</span>
@@ -450,23 +505,25 @@ export default function Dashboard() {
           )}
 
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+            <button onClick={() => setShowAlts(v => !v)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
               <Bell size={11}/> Alerts
               {alertList.length > 0 && (
                 <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
                   {alertList.length}
                 </span>
               )}
-            </p>
+              <span className="text-gray-300 ml-1">{showAlts ? '▲' : '▼'}</span>
+            </button>
             {alertList.length > 0 && (
               <button onClick={() => { alertsApi.dismissAll(); setAlerts([]) }}
                 className="text-xs text-gray-400 hover:text-gray-700">clear</button>
             )}
           </div>
-          {alertList.length === 0
+          {showAlts && (alertList.length === 0
             ? <p className="text-xs text-gray-300 text-center mt-6">No alerts</p>
             : alertList.map(a => <AlertItem key={a.id} a={a} onDismiss={dismissAlert}/>)
-          }
+          )}
         </div>
       </div>
     </div>
