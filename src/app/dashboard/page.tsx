@@ -16,30 +16,6 @@ const HORIZONS = [{v:'1w',l:'1W'},{v:'2w',l:'2W'},{v:'1m',l:'1M'},{v:'3m',l:'3M'
 interface Prefs { budget: number; stop_pct: number; profit_pct: number; horizon: string; risk: string }
 const DEFAULT: Prefs = { budget: 2000, stop_pct: 40, profit_pct: 100, horizon: '1m', risk: 'moderate' }
 
-// ── Top Strip ─────────────────────────────────────────────────────────────────
-function Strip({ data, onRefresh, refreshing }: any) {
-  const pnl  = data?.pnl  || {}
-  const bal  = data?.balances || {}
-  const acct = bal.account_currency_assets?.[0] || {}
-  const net  = pnl.net_liq || parseFloat(acct.net_liquidation_value || '0') || 0
-  const cash = pnl.cash    || parseFloat(bal.total_cash_balance      || '0') || 0
-  const dp   = pnl.total_pnl || 0
-
-  return (
-    <div className="flex items-center gap-6 px-5 py-2.5 bg-white border-b border-gray-200 shadow-sm">
-      <span className="font-bold text-gray-900 text-sm">StockBros</span>
-      <div className="flex gap-5 flex-1 text-sm">
-        <span className="text-gray-500">Net Liq <strong className="text-gray-900">{dollars(net)}</strong></span>
-        <span className="text-gray-500">P&L <strong className={clrPnl(dp)}>{signed(dp)}</strong></span>
-        <span className="text-gray-500">Cash <strong className="text-blue-600">{dollars(cash)}</strong></span>
-        <span className="text-gray-500">Win <strong className="text-gray-900">{pnl.win_rate || 0}%</strong></span>
-      </div>
-      <button onClick={onRefresh} disabled={refreshing} className="text-gray-400 hover:text-gray-700 transition">
-        <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-      </button>
-    </div>
-  )
-}
 
 // ── Position Row ──────────────────────────────────────────────────────────────
 function PosRow({ b }: { b: any }) {
@@ -371,8 +347,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
 
-      {/* Top strip */}
-      <Strip data={port} onRefresh={refreshPort} refreshing={refreshingPort} />
 
       {/* Main */}
       <div className="flex-1 flex flex-col lg:flex-row">
