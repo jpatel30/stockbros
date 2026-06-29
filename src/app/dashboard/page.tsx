@@ -248,42 +248,125 @@ function OptCard({ rec }: { rec: any }) {
 
 // ── Stock Card ────────────────────────────────────────────────────────────────
 function StockCard({ r }: { r: any }) {
+  const [open, setOpen] = useState(false)
   const ticker  = r.ticker || r.symbol || '?'
   const horizon = r.horizon_label || r.horizon || ''
   const tgtPct  = r.target_pct || 0
   const fund    = r.fundamental_score || 0
+  const conf    = r.conviction_score || r.fundamental_score || 0
+  const thesis  = r.thesis || ''
+  const inval   = r.invalidation_conditions || ''
+  const analyst = r.analyst_rec || ''
+  const upside  = r.analyst_upside_pct || tgtPct
+
+  // Status badge (same system as options)
+  const status  = r.status || 'NEW'
+  const statusCls = status === 'INTACT'  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : status === 'UPDATED' ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : status === 'BROKEN'  ? 'bg-red-50 text-red-500 border-red-200'
+                  : 'bg-purple-50 text-purple-700 border-purple-200'
+  const statusLabel = status === 'INTACT' ? '✅ INTACT'
+                    : status === 'UPDATED' ? '⬆️ STRONGER'
+                    : status === 'BROKEN'  ? '❌ BROKEN'
+                    : '🆕 NEW'
+
+  // Conviction tier (same as options)
+  const tier    = conf >= 75 ? 'HIGH' : conf >= 65 ? 'MODERATE' : 'WATCH'
+  const confCls = tier === 'HIGH' ? 'text-emerald-600' : tier === 'MODERATE' ? 'text-yellow-600' : 'text-orange-500'
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-3 overflow-hidden">
+    <div className={`rounded-2xl border shadow-sm mb-3 overflow-hidden ${
+      status === 'BROKEN' ? 'bg-gray-50 border-gray-200 opacity-60' : 'bg-white border-gray-200'
+    }`}>
+      {/* Header — same layout as OptCard */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <TrendingUp size={14} className="text-blue-500" />
-          <span className="font-bold text-gray-900">{ticker}</span>
+          <span className="font-bold text-gray-900 text-base">{ticker}</span>
           <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full">
             {horizon} · STOCK
           </span>
+          {status !== 'NEW' && (
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${statusCls}`}>
+              {statusLabel}
+            </span>
+          )}
+          {status === 'NEW' && (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+              🆕 NEW
+            </span>
+          )}
         </div>
-        <span className="font-bold text-emerald-600">{tgtPct > 0 ? '+' : ''}{tgtPct.toFixed(1)}%</span>
+        <div className="text-right">
+          <div className={`text-lg font-bold ${confCls}`}>{conf}/100</div>
+          <div className="text-xs text-gray-400">{tier}</div>
+        </div>
       </div>
 
+      {/* Status reason */}
+      {r.status_reason && (
+        <div className={`px-4 py-1.5 text-xs font-medium border-b border-gray-100 ${
+          status === 'INTACT' ? 'text-emerald-600 bg-emerald-50'
+          : status === 'UPDATED' ? 'text-blue-600 bg-blue-50'
+          : 'text-gray-500 bg-gray-50'
+        }`}>→ {r.status_reason}</div>
+      )}
+
+      {/* Key numbers */}
       <div className="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100">
-        {[
-          { l: 'Entry',   v: r.entry_price ? `$${r.entry_price.toFixed(2)}` : '—' },
-          { l: 'Target',  v: r.target_price ? `$${r.target_price.toFixed(0)}` : '—', c: 'text-emerald-600' },
-          { l: 'Stop',    v: r.stop_price   ? `$${r.stop_price.toFixed(0)}`  : '—', c: 'text-red-500' },
-          { l: 'Fund',    v: `${fund}/100` },
-        ].map(({ l, v, c }) => (
-          <div key={l} className="px-3 py-2 text-center">
-            <div className="text-xs text-gray-400">{l}</div>
-            <div className={`text-sm font-bold ${c || 'text-gray-900'}`}>{v}</div>
+        <div className="px-3 py-2 text-center">
+          <div className="text-xs text-gray-400">Entry</div>
+          <div className="text-sm font-bold text-gray-900">
+            {r.entry_price ? `$${r.entry_price.toFixed(2)}` : '—'}
           </div>
-        ))}
+        </div>
+        <div className="px-3 py-2 text-center">
+          <div className="text-xs text-gray-400">Target</div>
+          <div className="text-sm font-bold text-emerald-600">
+            {r.target_price ? `$${r.target_price.toFixed(0)}` : '—'}
+            {tgtPct ? ` (+${tgtPct.toFixed(1)}%)` : ''}
+          </div>
+        </div>
+        <div className="px-3 py-2 text-center">
+          <div className="text-xs text-gray-400">Stop</div>
+          <div className="text-sm font-bold text-red-500">
+            {r.stop_price ? `$${r.stop_price.toFixed(0)}` : '—'}
+            {r.stop_pct ? ` (${r.stop_pct}%)` : ''}
+          </div>
+        </div>
+        <div className="px-3 py-2 text-center">
+          <div className="text-xs text-gray-400">Fundamentals</div>
+          <div className="text-sm font-bold text-gray-900">{fund}/100</div>
+        </div>
       </div>
 
-      {r.thesis && (
-        <div className="px-4 py-3">
-          <p className="text-xs text-gray-600 leading-relaxed">{r.thesis.slice(0, 160)}...</p>
+      {/* Analyst + R:R */}
+      {(analyst || r.risk_reward) && (
+        <div className="px-4 py-2 border-b border-gray-100 flex gap-4 text-xs text-gray-500">
+          {analyst && <span>Analyst: <strong className="text-gray-900 capitalize">{analyst}</strong></span>}
+          {r.analyst_count && <span>{r.analyst_count} analysts</span>}
+          {r.risk_reward && <span>R:R: <strong className="text-gray-900">{r.risk_reward.toFixed(1)}x</strong></span>}
+          {r.shares && <span>Shares: <strong className="text-gray-900">{r.shares}</strong></span>}
         </div>
+      )}
+
+      {/* Thesis */}
+      <div className="px-4 py-3">
+        {thesis && <p className="text-xs text-gray-600 leading-relaxed">{thesis}</p>}
+      </div>
+
+      {/* Invalidation conditions */}
+      {inval && (
+        <>
+          <button onClick={() => setOpen(!open)}
+            className="flex items-center gap-1 px-4 py-2 text-xs text-gray-400 hover:text-gray-600 border-t border-gray-100 w-full">
+            {open ? <ChevronUp size={10}/> : <ChevronDown size={10}/>}
+            {open ? 'Hide' : 'Invalidation conditions'}
+          </button>
+          {open && (
+            <div className="px-4 pb-3 text-xs text-orange-600 bg-orange-50">⚠️ {inval}</div>
+          )}
+        </>
       )}
     </div>
   )
