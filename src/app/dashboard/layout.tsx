@@ -2,40 +2,45 @@
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { isLoggedIn } from '@/lib/auth'
-import { LayoutDashboard, List, Bell, BookOpen, LogOut } from 'lucide-react'
+import { isLoggedIn, clearToken } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
-const nav = [
-  { href: '/dashboard',           label: 'Picks',      icon: LayoutDashboard },
-  { href: '/dashboard/watchlist', label: 'Watchlist',  icon: List },
-  { href: '/dashboard/alerts',    label: 'Alerts',     icon: Bell },
-  { href: '/dashboard/learning',  label: 'Learning',   icon: BookOpen },
+const tabs = [
+  { href: '/dashboard',           label: 'Picks'      },
+  { href: '/dashboard/watchlist', label: 'Watchlist'  },
+  { href: '/dashboard/alerts',    label: 'Alerts'     },
+  { href: '/dashboard/learning',  label: 'Learning'   },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter()
   const pathname = usePathname()
+
   useEffect(() => { if (!isLoggedIn()) router.push('/login') }, [router])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {children}
-      {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50">
-        <div className="flex">
-          {nav.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href}
-              className={cn(
-                'flex-1 flex flex-col items-center py-2 text-xs transition',
-                pathname === href ? 'text-blue-600' : 'text-gray-400'
-              )}>
-              <Icon size={18} />
-              <span className="mt-0.5">{label}</span>
-            </Link>
-          ))}
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Tab bar - always visible */}
+      <div className="bg-white border-b border-gray-200 px-4 flex items-center gap-1">
+        {tabs.map(({ href, label }) => (
+          <Link key={href} href={href}
+            className={cn(
+              'px-4 py-3 text-sm font-medium border-b-2 transition whitespace-nowrap',
+              pathname === href
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
+            )}>
+            {label}
+          </Link>
+        ))}
+        <div className="flex-1" />
+        <button
+          onClick={() => { clearToken(); router.push('/login') }}
+          className="text-xs text-gray-400 hover:text-gray-700 py-3 px-2">
+          Sign out
+        </button>
+      </div>
+      <div className="flex-1">{children}</div>
     </div>
   )
 }
