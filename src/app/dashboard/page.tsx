@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { portfolio, recommendations, alerts as alertsApi, signals } from '@/lib/api'
+import { portfolio, recommendations, alerts as alertsApi, signals, stockRecs } from '@/lib/api'
 import { fmt, tierBg, tierColor, pnlColor } from '@/lib/utils'
 import {
   TrendingUp, TrendingDown, Minus, RefreshCw, Search,
@@ -146,6 +146,7 @@ export default function Dashboard() {
   const [recs, setRecs]         = useState<any[]>([])
   const [alertList, setAlerts]  = useState<any[]>([])
   const [sellSigs, setSellSigs] = useState<any[]>([])
+  const [stocks, setStocks]     = useState<any[]>([])
   const [prefs, setPrefs]       = useState<Prefs>(DEFAULT_PREFS)
   const [stage, setStage]       = useState<'form'|'scanning'|'results'>('form')
   const [loadingPort, setLP]    = useState(true)
@@ -160,6 +161,7 @@ export default function Dashboard() {
     }).catch(() => {})
     // Sell signals (rule-based, fast)
     signals.sell().then(s => setSellSigs(s?.filter((x:any) => x.signals?.length > 0) || [])).catch(() => {})
+    stockRecs.get(5000).then(d => setStocks(d?.stocks || [])).catch(() => {})
   }, [])
 
   const refreshPort = async () => {

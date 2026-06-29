@@ -68,6 +68,11 @@ export const learning = {
   backtest: () => api.get('/api/learning/backtest').then(r => r.data),
 }
 
+export const stockRecs = {
+  get: (budget?: number) =>
+    api.get(`/api/recommendations/stocks${budget ? `?budget=${budget}` : ''}`).then(r => r.data),
+}
+
 export const execution = {
   confirm: (symbol: string, entry_price: number, qty: number) =>
     api.post('/api/execution/confirm', { symbol, entry_price, qty }).then(r => r.data),
