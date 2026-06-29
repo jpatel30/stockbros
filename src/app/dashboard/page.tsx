@@ -451,7 +451,24 @@ export default function Dashboard() {
           {/* Scan form */}
           {stage === 'form' && (
             <div className="max-w-lg">
-              <p className="text-sm font-semibold text-gray-700 mb-4">Set today's parameters</p>
+              {/* Scan type toggle */}
+              <div className="flex gap-3 mb-5">
+                <button onClick={() => setPrefs(p => ({...p, scanType:'options', horizon:'1m'}))}
+                  className={`flex-1 py-3 rounded-2xl text-sm font-semibold border-2 transition ${
+                    prefs.scanType !== 'stocks'
+                      ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
+                      : 'border-gray-200 text-gray-500 bg-white'
+                  }`}>📈 Options</button>
+                <button onClick={() => setPrefs(p => ({...p, scanType:'stocks', horizon:'6m'}))}
+                  className={`flex-1 py-3 rounded-2xl text-sm font-semibold border-2 transition ${
+                    prefs.scanType === 'stocks'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'border-gray-200 text-gray-500 bg-white'
+                  }`}>🏢 Stocks</button>
+              </div>
+              <p className="text-sm font-semibold text-gray-700 mb-4">
+                {prefs.scanType === 'stocks' ? 'Stock scan parameters' : 'Options scan parameters'}
+              </p>
 
               <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
                 <p className="text-xs text-gray-500 mb-2 font-medium">Budget</p>
@@ -558,7 +575,6 @@ export default function Dashboard() {
               <button onClick={runScan}
                 className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-2xl flex items-center justify-center gap-2 text-sm transition shadow-sm">
                 {prefs.scanType === 'stocks' ? <><span>🏢</span> Find Best Stocks</> : <><Search size={15}/> Find Best Options</>}
-              </button>
 
               </button>
             </div>
