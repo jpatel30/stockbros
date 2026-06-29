@@ -454,8 +454,13 @@ export default function Dashboard() {
       const d = await recommendations.daily(true, prefs.budget, prefs.scanType, prefs.horizon)
       const optRecs  = d.recommendations || []
       const stkRecs  = d.stocks || []
-      setRecs(optRecs)
-      if (stkRecs.length) setStocks(stkRecs)
+      if (prefs.scanType === 'stocks') {
+        setRecs([])
+        setStocks(stkRecs)
+      } else {
+        setRecs(optRecs)
+        setStocks([])  // clear stocks when showing options
+      }
       setMsg(d.market_view || '')
       if (optRecs.length > 0 || stkRecs.length > 0) {
         setStage('results')
@@ -743,8 +748,8 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Stocks */}
-              {stocks.length > 0 && (
+              {/* Stocks — only shown when stock scan */}
+              {stocks.length > 0 && prefs.scanType === 'stocks' && (
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
                     Stock Recommendations
