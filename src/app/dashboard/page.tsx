@@ -206,8 +206,8 @@ export default function Dashboard() {
               {sellSigs.length > 0 && (
                 <div className="mb-3">
                   <p className="text-xs font-semibold text-red-400 mb-1">⚠️ SELL SIGNALS ({sellSigs.length})</p>
-                  {sellSigs.slice(0,3).map((s:any) => (
-                    <div key={s.symbol} className="text-xs bg-red-900/20 border border-red-800/30 rounded px-2 py-1 mb-1">
+                  {sellSigs.slice(0,3).map((s:any, i:number) => (
+                    <div key={`ss-${s.symbol}-${i}`} className="text-xs bg-red-900/20 border border-red-800/30 rounded px-2 py-1 mb-1">
                       <span className="font-bold text-red-400">{s.symbol}</span>
                       <span className="text-gray-400 ml-1">{s.pnl_pct}% — {s.signals?.[0]?.slice(0,30)}</span>
                     </div>
