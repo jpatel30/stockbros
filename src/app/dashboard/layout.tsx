@@ -48,10 +48,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
       <div className="bg-white border-b border-gray-100 px-5 py-2 flex items-center gap-6 text-sm">
         <div><span className="text-gray-400 text-xs">Net Liq </span><span className="font-bold text-gray-900">{dollars(netLiq)}</span></div>
-        <div><span className="text-gray-400 text-xs">P&L </span><span className={}>{signed(dayPnl)}</span></div>
+        <div><span className="text-gray-400 text-xs">P&amp;L </span><span className={dayPnl >= 0 ? "font-bold text-emerald-600" : "font-bold text-red-500"}>{signed(dayPnl)}</span></div>
         <div><span className="text-gray-400 text-xs">Cash </span><span className="font-bold text-blue-600">{dollars(cash)}</span></div>
         <div><span className="text-gray-400 text-xs">Win </span><span className="font-bold text-gray-900">{winRate}%</span></div>
-      </div>
+      </div></div>
       <div className="bg-white border-b border-gray-200 px-4 flex items-center gap-0">
         {tabs.map(({ href, label }) => (
           <Link key={href} href={href}
