@@ -465,48 +465,101 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
-                <p className="text-xs text-gray-500 mb-2 font-medium">Time horizon</p>
-                <div className="flex gap-2 flex-wrap">
-                  {(prefs.scanType === 'stocks'
-                    ? [{v:'3m',l:'3 Month'},{v:'6m',l:'6 Month'},{v:'1yr',l:'1 Year'}]
-                    : [{v:'1w',l:'1 Week'},{v:'2w',l:'2 Week'},{v:'1m',l:'1 Month'},{v:'3m',l:'3 Month'}]
-                  ).map(({v,l}) => (
-                    <button key={v} onClick={() => setPrefs(p => ({...p, horizon:v}))}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                        prefs.horizon===v
-                          ? (prefs.scanType==='stocks' ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-900 text-white border-gray-900')
-                          : 'border-gray-200 text-gray-600 hover:border-gray-400'
-                      }`}>{l}</button>
+              {/* ── OPTIONS parameters ─────────────────────────── */}
+              {prefs.scanType !== 'stocks' && (<>
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Expiry horizon</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[{v:'1w',l:'1 Week'},{v:'2w',l:'2 Week'},{v:'1m',l:'1 Month'},{v:'3m',l:'3 Month'}].map(({v,l}) => (
+                      <button key={v} onClick={() => setPrefs(p => ({...p, horizon:v}))}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                          prefs.horizon===v ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600'
+                        }`}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {[
+                    {label:'Max loss', key:'stop_pct', opts:[25,40,50], active:'bg-red-500 text-white border-red-500'},
+                    {label:'Target', key:'profit_pct', opts:[50,100,200], active:'bg-emerald-500 text-white border-emerald-500'},
+                    {label:'Risk', key:'risk', opts:['conservative','moderate','aggressive'], labels:['C','M','A'], active:'bg-yellow-500 text-white border-yellow-500'},
+                  ].map(({label,key,opts,labels,active}) => (
+                    <div key={key} className="bg-white rounded-2xl border border-gray-200 p-3">
+                      <p className="text-xs text-gray-500 mb-2 font-medium">{label}</p>
+                      <div className="flex gap-1">
+                        {opts.map((v,i) => (
+                          <button key={String(v)} onClick={() => setPrefs(p => ({...p, [key]:v}))}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition ${
+                              (prefs as any)[key]===v ? active : 'border-gray-200 text-gray-500'
+                            }`}>{labels ? labels[i] : (typeof v==='number' ? v+'%' : String(v)[0].toUpperCase())}</button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
+              </>)}
 
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                {[
-                  {label:'Max loss', key:'stop_pct', opts:[25,40,50], active:'bg-red-500 text-white border-red-500'},
-                  {label:'Target',   key:'profit_pct', opts:[50,100,200], active:'bg-emerald-500 text-white border-emerald-500'},
-                  {label:'Risk',     key:'risk', opts:['conservative','moderate','aggressive'],
-                   labels:['C','M','A'], active:'bg-yellow-500 text-white border-yellow-500'},
-                ].map(({label, key, opts, labels, active}) => (
-                  <div key={key} className="bg-white rounded-2xl border border-gray-200 p-3">
-                    <p className="text-xs text-gray-500 mb-2 font-medium">{label}</p>
+              {/* ── STOCKS parameters ──────────────────────────────── */}
+              {prefs.scanType === 'stocks' && (<>
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Holding period</p>
+                  <div className="flex gap-2">
+                    {[{v:'3m',l:'Short term',sub:'1–3 months'},{v:'6m',l:'Medium term',sub:'3–6 months'},{v:'1yr',l:'Long term',sub:'6–12 months'}].map(({v,l,sub}) => (
+                      <button key={v} onClick={() => setPrefs(p => ({...p, horizon:v}))}
+                        className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-medium border-2 transition text-center ${
+                          prefs.horizon===v ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 bg-white'
+                        }`}>
+                        <div className="font-semibold">{l}</div>
+                        <div className={`text-xs mt-0.5 ${prefs.horizon===v ? 'text-blue-100' : 'text-gray-400'}`}>{sub}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-3">
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Investment amount</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[1000,2500,5000,10000,25000].map(v => (
+                      <button key={v} onClick={() => setPrefs(p => ({...p, budget:v}))}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                          prefs.budget===v ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600'
+                        }`}>${v.toLocaleString()}</button>
+                    ))}
+                    <input type="number" placeholder="Custom"
+                      onChange={e => setPrefs(p => ({...p, budget:Number(e.target.value)}))}
+                      className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-blue-400" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-white rounded-2xl border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Risk tolerance</p>
                     <div className="flex gap-1">
-                      {opts.map((v, i) => (
-                        <button key={String(v)} onClick={() => setPrefs(p => ({...p, [key]:v}))}
+                      {[['C','conservative'],['M','moderate'],['A','aggressive']].map(([l,v]) => (
+                        <button key={v} onClick={() => setPrefs(p => ({...p, risk:v}))}
                           className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition ${
-                            (prefs as any)[key]===v ? active : 'border-gray-200 text-gray-500'
-                          }`}>{labels ? labels[i] : (typeof v === 'number' ? v+'%' : String(v)[0].toUpperCase())}</button>
+                            prefs.risk===v ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-500'
+                          }`}>{l}</button>
                       ))}
                     </div>
                   </div>
-                ))}
-              </div>
-
+                  <div className="bg-white rounded-2xl border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Stop loss</p>
+                    <div className="flex gap-1">
+                      {[10,15,20].map(v => (
+                        <button key={v} onClick={() => setPrefs(p => ({...p, stop_pct:v}))}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition ${
+                            prefs.stop_pct===v ? 'bg-red-500 text-white border-red-500' : 'border-gray-200 text-gray-500'
+                          }`}>{v}%</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>)}
 
               <button onClick={runScan}
                 className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-2xl flex items-center justify-center gap-2 text-sm transition shadow-sm">
-                {prefs.scanType === "stocks" ? <><span>🏢</span> Find Best Stocks</> : <><Search size={15}/> Find Best Options</>}
+                {prefs.scanType === 'stocks' ? <><span>🏢</span> Find Best Stocks</> : <><Search size={15}/> Find Best Options</>}
+              </button>
+
               </button>
             </div>
           )}
