@@ -320,7 +320,7 @@ export default function Dashboard() {
     portfolio.get(true).then(setPort).catch(() => {})
 
     try {
-      const d = await recommendations.daily(true)
+      const d = await recommendations.daily(true, prefs.budget)
       const optRecs  = d.recommendations || []
       const stkRecs  = d.stocks || []
       setRecs(optRecs)

@@ -37,8 +37,8 @@ export const portfolio = {
 
 export const recommendations = {
   // No scan param = return cached instantly or empty with needs_scan=true
-  daily:      (force?: boolean) =>
-    api.get(`/api/recommendations/daily${force ? '?force_refresh=true' : ''}`).then(r => r.data),
+  daily:      (force?: boolean, budget?: number) =>
+    api.get(`/api/recommendations/daily${force ? `?force_refresh=true&budget=${budget||2000}` : ''}`).then(r => r.data),
   history:    (days?: number) =>
     api.get(`/api/recommendations/history?days_back=${days || 7}`).then(r => r.data),
   invalidate: (ticker: string, reason: string) =>
