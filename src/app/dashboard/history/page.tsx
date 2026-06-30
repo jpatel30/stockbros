@@ -60,35 +60,55 @@ function BacktestSummary({ stats }: { stats: any }) {
 
 function PickRow({ p }: { p: any }) {
   const hasMark = p.pnl_dollars !== null
+  const legs    = p.legs || []
+  const isOption = legs.length > 0
+
+  const legsDisplay = legs.length > 0
+    ? legs.map((l: any) =>
+        `${l.action} $${Number(l.strike).toFixed(2)} ${l.type?.[0] || ''} @ $${Number(l.mid || 0).toFixed(2)}`
+      ).join('  ·  ')
+    : ''
+
   return (
-    <div className="flex items-center justify-between py-2.5 px-1 border-b border-gray-50 last:border-0">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="font-semibold text-gray-900 text-sm">{p.ticker}</span>
-          <span className={`text-xs px-1.5 py-0.5 rounded ${
-            p.direction === 'BULLISH' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
-          }`}>{p.direction}</span>
-          <span className="text-xs text-gray-400">{(p.strategy || 'STOCK').replace(/_/g,' ')}</span>
-        </div>
-        <div className="text-xs text-gray-400 mt-0.5">
-          conv {p.conviction_score}/100
-          {p.expiry && ` · exp ${p.expiry}`}
-          {p.mark_type === 'live' && <span className="text-emerald-500 ml-1">● live</span>}
-          {p.mark_type === 'eod_close' && <span className="text-gray-400 ml-1">○ close</span>}
-        </div>
-      </div>
-      <div className="text-right ml-3">
-        <div className="text-xs text-gray-400">
-          ${p.entry_value?.toFixed(2)} → {hasMark ? `$${p.current_value?.toFixed(2)}` : '—'}
-        </div>
-        {hasMark ? (
-          <div className={`text-sm font-bold ${pnlClr(p.pnl_dollars)}`}>
-            {signed(p.pnl_dollars)} ({pct(p.pnl_pct)})
+    <div className="py-2.5 px-1 border-b border-gray-50 last:border-0">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-gray-900 text-sm">{p.ticker}</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded ${
+              p.direction === 'BULLISH' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+            }`}>{p.direction}</span>
+            <span className="text-xs text-gray-400">{(p.strategy || 'STOCK').replace(/_/g,' ')}</span>
           </div>
-        ) : (
-          <div className="text-xs text-gray-300">pending mark</div>
-        )}
+          <div className="text-xs text-gray-400 mt-0.5">
+            conv {p.conviction_score}/100
+            {p.expiry && ` · exp ${p.expiry}`}
+            {p.mark_type === 'live' && <span className="text-emerald-500 ml-1">● live</span>}
+            {p.mark_type === 'eod_close' && <span className="text-gray-400 ml-1">○ close</span>}
+          </div>
+        </div>
+        <div className="text-right ml-3">
+          <div className="text-xs text-gray-400">
+            ${p.entry_value?.toFixed(2)} → {hasMark ? `$${p.current_value?.toFixed(2)}` : '—'}
+          </div>
+          {hasMark ? (
+            <div className={`text-sm font-bold ${pnlClr(p.pnl_dollars)}`}>
+              {signed(p.pnl_dollars)} ({pct(p.pnl_pct)})
+            </div>
+          ) : isOption ? (
+            <div className="text-xs text-orange-400">strike not found</div>
+          ) : (
+            <div className="text-xs text-gray-300">pending mark</div>
+          )}
+        </div>
       </div>
+
+      {/* Strike breakdown — lets user verify exact entry */}
+      {isOption && (
+        <div className="mt-1.5 pl-0.5 text-xs font-mono text-gray-500 bg-gray-50 rounded-lg px-2 py-1.5">
+          {legsDisplay}
+        </div>
+      )}
     </div>
   )
 }
