@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 const tabs = [
   { href: "/dashboard",           label: "Picks"     },
   { href: "/dashboard/watchlist", label: "Watchlist" },
+  { href: "/dashboard/history",   label: "History"   },
 ]
 
 const dollars = (n: number) =>
