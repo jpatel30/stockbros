@@ -412,25 +412,25 @@ export default function Dashboard() {
   useEffect(() => {
     portfolio.get(false).then(setPort).finally(() => setLP(false))
     alertsApi.get(10).then(setAlerts).catch(() => {})
-    stockRecs.get(5000).then(d => setStocks(d?.stocks || [])).catch(() => {})
     signals.sell().then(s => setSellSigs(s?.filter((x:any) => x.signals?.length > 0) || [])).catch(() => {})
-    recommendations.daily().then(d => {
-      if (d.recommendations?.length) {
+
+    // Only auto-load cached OPTIONS recs from a real prior scan today.
+    // Never auto-loads stocks, never shows results unless cache actually exists.
+    recommendations.daily(false, undefined, 'options').then(d => {
+      if (d.recommendations?.length && d.source === 'cached_today') {
         setRecs(d.recommendations)
-        if (d.stocks?.length) setStocks(d.stocks)
+        setStocks([])
         setStage('results')
 
-        // Auto-rescan if: market open AND last scan > 2 hours ago
-        const lastScan  = d.recommendations[0]?.scan_time || ''
-        const now       = new Date()
-        const etHour    = (now.getUTCHours() - 4 + 24) % 24  // ET = UTC-4
+        const lastScan   = d.recommendations[0]?.scan_time || ''
+        const now        = new Date()
+        const etHour     = (now.getUTCHours() - 4 + 24) % 24
         const marketOpen = etHour >= 9 && etHour < 16
-        const scanAge   = lastScan
-          ? (now.getTime() - new Date(lastScan).getTime()) / 1000 / 60  // minutes
+        const scanAge    = lastScan
+          ? (now.getTime() - new Date(lastScan).getTime()) / 1000 / 60
           : 999
         if (marketOpen && scanAge > 120) {
-          console.log(`Auto-rescan: scan is ${scanAge.toFixed(0)}m old, market open`)
-          setTimeout(runScan, 2000)  // slight delay so page loads first
+          setTimeout(runScan, 2000)
         }
       }
     }).catch(() => {})
