@@ -27,7 +27,7 @@ export default function WatchlistPage() {
   }
 
   useEffect(() => {
-    wlApi.get().then((d: any) => setTickers(d.tickers || []))
+    wlApi.get().then((d: any) => setTickers((d.tickers || []).sort()))
               .finally(() => setLoading(false))
   }, [])
 
@@ -35,7 +35,7 @@ export default function WatchlistPage() {
     const t = input.trim().toUpperCase()
     if (!t || tickers.includes(t)) return
     await wlApi.add(t)
-    setTickers(p => [...p, t])
+    setTickers(p => [...p, t].sort())
     setInput('')
   }
 
