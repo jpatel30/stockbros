@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!isLoggedIn()) { router.push("/login"); return }
     portfolio.get(false).then(setPort).catch(() => {})
     const interval = setInterval(() =>
-      portfolio.get(true).then(setPort).catch(() => {}), 60000)
+      portfolio.get(true).then(setPort).catch(() => {}), 300000)
     return () => clearInterval(interval)
   }, [router])
 
@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div><span className="text-gray-400 text-xs">P&amp;L </span><span className={dayPnl >= 0 ? "font-bold text-emerald-600" : "font-bold text-red-500"}>{signed(dayPnl)}</span></div>
         <div><span className="text-gray-400 text-xs">Cash </span><span className="font-bold text-blue-600">{dollars(cash)}</span></div>
         <div><span className="text-gray-400 text-xs">Win </span><span className="font-bold text-gray-900">{winRate}%</span></div>
-        <button onClick={() => portfolio.get(true).then(setPort).catch(() => {})}
+        <button onClick={() => { portfolio.get(true).then(setPort).catch(() => {}); window.dispatchEvent(new CustomEvent('portfolio:refresh')) }}
           className="ml-auto text-gray-400 hover:text-gray-700 transition" title="Refresh portfolio">
           ↻
         </button>

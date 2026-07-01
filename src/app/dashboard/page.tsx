@@ -410,6 +410,15 @@ export default function Dashboard() {
   const [showAlts, setShowAlts]   = useState(true)
 
   useEffect(() => {
+    // Listen for refresh events from layout strip button
+    const onRefresh = () => {
+      portfolio.get(true).then(setPort).catch(() => {})
+    }
+    window.addEventListener('portfolio:refresh', onRefresh)
+    return () => window.removeEventListener('portfolio:refresh', onRefresh)
+  }, [])
+
+  useEffect(() => {
     portfolio.get(false).then(setPort).finally(() => setLP(false))
     alertsApi.get(10).then(setAlerts).catch(() => {})
     signals.sell().then(s => setSellSigs(s?.filter((x:any) => x.signals?.length > 0) || [])).catch(() => {})
