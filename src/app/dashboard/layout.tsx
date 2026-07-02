@@ -57,6 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }`} title="Refresh portfolio">
           <span className={refreshing ? 'animate-spin inline-block' : ''}>↻</span>
           {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
       </div>
       <div className="bg-white border-b border-gray-200 px-4 flex items-center gap-0">
         {tabs.map(({ href, label }) => (
