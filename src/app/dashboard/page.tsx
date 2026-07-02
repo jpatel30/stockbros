@@ -449,8 +449,6 @@ export default function Dashboard() {
   const dismissAlert = (id: string) => { alertsApi.dismiss(id); setAlerts(a => a.filter(x => x.id !== id)) }
   const runScan = async () => {
     setStage('scanning')
-    // Refresh portfolio in parallel with scan
-    portfolio.get(true).then(setPort).catch(() => {})
 
     try {
       const params = new URLSearchParams({
