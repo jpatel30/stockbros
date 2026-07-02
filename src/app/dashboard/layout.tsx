@@ -21,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router   = useRouter()
   const pathname = usePathname()
   const [port, setPort] = useState<any>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push("/login"); return }
@@ -50,10 +51,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div><span className="text-gray-400 text-xs">P&amp;L </span><span className={dayPnl >= 0 ? "font-bold text-emerald-600" : "font-bold text-red-500"}>{signed(dayPnl)}</span></div>
         <div><span className="text-gray-400 text-xs">Cash </span><span className="font-bold text-blue-600">{dollars(cash)}</span></div>
         <div><span className="text-gray-400 text-xs">Win </span><span className="font-bold text-gray-900">{winRate}%</span></div>
-        <button onClick={() => { portfolio.get(true).then(setPort).catch(() => {}); window.dispatchEvent(new CustomEvent('portfolio:refresh')) }}
-          className="ml-auto text-gray-400 hover:text-gray-700 transition" title="Refresh portfolio">
-          ↻
-        </button>
+        <button onClick={() => { setRefreshing(true); portfolio.get(true).then(setPort).finally(() => setRefreshing(false)).catch(() => setRefreshing(false)); window.dispatchEvent(new CustomEvent('portfolio:refresh')) }}
+          className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition text-xs font-medium ${
+            refreshing ? 'border-blue-200 text-blue-500 bg-blue-50' : 'border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-800'
+          }`} title="Refresh portfolio">
+          <span className={refreshing ? 'animate-spin inline-block' : ''}>↻</span>
+          {refreshing ? 'Refreshing...' : 'Refresh'}
       </div>
       <div className="bg-white border-b border-gray-200 px-4 flex items-center gap-0">
         {tabs.map(({ href, label }) => (
