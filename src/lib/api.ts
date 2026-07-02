@@ -3,7 +3,7 @@ import Cookies from 'js-cookie'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
-const api = axios.create({ baseURL: API_URL })
+const api = axios.create({ baseURL: API_URL, timeout: 120000 })  // 120s for slow scans
 
 api.interceptors.request.use((config) => {
   const token = Cookies.get('token')
