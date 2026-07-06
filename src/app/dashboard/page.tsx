@@ -691,6 +691,10 @@ export default function Dashboard() {
                 <p className="text-sm font-semibold text-gray-700">
                   {recs.length} option{recs.length !== 1 ? 's' : ''} · {stocks.length} stock{stocks.length !== 1 ? 's' : ''}
                 </p>
+                <button onClick={() => { setRecs([]); setStocks([]); setStage('form') }}
+                  className="text-xs text-gray-400 hover:text-gray-700 transition">
+                  ← Back
+                </button>
                 <button onClick={() => { setRecs([]); setStage('form') }}
                   className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 border border-gray-200 rounded-lg px-3 py-1.5 transition">
                   <RotateCcw size={11}/> Rescan
@@ -698,13 +702,13 @@ export default function Dashboard() {
               </div>
 
               {/* Fill confirmation */}
-              {recs.length > 0 && fills.length === 0 && (
+              {(recs.length > 0 || stocks.length > 0) && fills.length === 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4">
                   <p className="text-xs font-semibold text-amber-800 mb-2">
                     Did you enter any of these trades?
                   </p>
                   <div className="flex gap-2 flex-wrap">
-                    {recs.map((r: any) => (
+                    {[...recs, ...stocks].map((r: any) => (
                       <button key={r.ticker}
                         onClick={async () => {
                           setFills(prev => [...prev, r.ticker])
