@@ -92,10 +92,10 @@ function OptCard({ rec }: { rec: any }) {
   const legs      = rec.legs || []
 
   // Cost display: webull_limit_price is the actual order price
-  const limitPx   = rec.webull_limit_price || 0
+  const limitPx   = rec.webull_limit_price || rec.entry_debit || 0
   const costPerCtr = Math.abs(limitPx) * 100  // per contract in dollars
-  const maxLoss   = Math.abs(rec.max_loss_per_contract || 0)
-  const maxGain   = rec.max_profit_per_contract || 0
+  const maxLoss   = Math.abs(rec.max_loss_per_contract || rec.max_loss || 0)
+  const maxGain   = rec.max_profit_per_contract || rec.max_profit || 0
   const rr        = rec.risk_reward || 0
   const webull    = rec.webull_instructions || ''
   const thesis    = rec.reasoning || rec.thesis || ''
