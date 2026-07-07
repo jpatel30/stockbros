@@ -73,6 +73,47 @@ function OptPosRow({ b }: { b: any }) {
   )
 }
 
+// ── Fill Button — per recommendation card ────────────────────────────────────
+function FillButton({ ticker }: { ticker: string }) {
+  const [filled, setFilled] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const handleFill = async () => {
+    setLoading(true)
+    try {
+      const token = document.cookie.match(/token=([^;]+)/)?.[1] || ''
+      await fetch('http://localhost:8001/api/execution/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ symbol: ticker, entry_price: 0, qty: 1 })
+      })
+      setFilled(true)
+    } catch (e) {
+      setFilled(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (filled) {
+    return (
+      <div className="px-4 py-2 border-t border-gray-100 text-xs text-emerald-600 font-medium">
+        ✅ Marked as filled — monitoring for alerts
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-2">
+      <span className="text-xs text-gray-400">Did you enter this trade?</span>
+      <button onClick={handleFill} disabled={loading}
+        className="text-xs px-2.5 py-1 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 hover:bg-amber-100 transition font-medium">
+        {loading ? '...' : `✅ Filled ${ticker}`}
+      </button>
+    </div>
+  )
+}
+
 // ── Options Card ──────────────────────────────────────────────────────────────
 function OptCard({ rec }: { rec: any }) {
   const [open, setOpen] = useState(false)
@@ -244,6 +285,8 @@ function OptCard({ rec }: { rec: any }) {
           )}
         </>
       )}
+      {/* Fill confirmation — per card */}
+      <FillButton ticker={ticker} />
     </div>
   )
 }
@@ -703,47 +746,7 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              {/* Fill confirmation */}
-              {(recs.length > 0 || stocks.length > 0) && fills.length === 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4">
-                  <p className="text-xs font-semibold text-amber-800 mb-2">
-                    Did you enter any of these trades?
-                  </p>
-                  <div className="flex gap-2 flex-wrap">
-                    {[...recs, ...stocks].map((r: any) => (
-                      <button key={r.ticker}
-                        onClick={async () => {
-                          setFills(prev => [...prev, r.ticker])
-                          // Find actual position price from portfolio
-                          const pos = (port?.bets || []).find((b:any) => b.symbol === r.ticker)
-                          const entryPrice = pos?.unit_cost || pos?.last_price || 0
-                          const qty = pos?.qty || 1
-                          await fetch(`http://localhost:8001/api/execution/confirm`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${document.cookie.match(/token=([^;]+)/)?.[1]||''}`
-                            },
-                            body: JSON.stringify({ symbol: r.ticker, entry_price: entryPrice, qty })
-                          })
-                          portfolio.get(true).then(setPort)
-                        }}
-                        className="px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-medium text-amber-800 hover:bg-amber-100 transition">
-                        ✅ Filled {r.ticker}
-                      </button>
-                    ))}
-                    <button onClick={() => setFills(['SKIPPED'])}
-                      className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg transition">
-                      Not yet
-                    </button>
-                  </div>
-                  {autoCheckCount > 0 && fills.length === 0 && (
-                    <p className="text-xs text-gray-400 mt-2">
-                      🔄 Auto-checking portfolio for new positions...
-                    </p>
-                  )}
-                </div>
-              )}
+
 
               {fills.filter(f => f !== 'SKIPPED').length > 0 && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-xs text-emerald-700">
