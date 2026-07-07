@@ -92,7 +92,9 @@ function OptCard({ rec }: { rec: any }) {
   const legs      = rec.legs || []
 
   // Cost display: webull_limit_price is the actual order price
+  const isCredit  = rec.strategy?.includes("IRON") || rec.strategy?.includes("CREDIT")
   const limitPx   = rec.webull_limit_price || rec.entry_debit || 0
+  const limitAbs  = Math.abs(limitPx)
   const costPerCtr = Math.abs(limitPx) * 100  // per contract in dollars
   const maxLoss   = Math.abs(rec.max_loss_per_contract || rec.max_loss || 0)
   const maxGain   = rec.max_profit_per_contract || rec.max_profit || 0
@@ -161,7 +163,7 @@ function OptCard({ rec }: { rec: any }) {
         <div className="px-3 py-2 text-center">
           <div className="text-xs text-gray-400">Limit price</div>
           <div className="text-sm font-bold text-gray-900">
-            {limitPx ? `$${Math.abs(limitPx).toFixed(2)}/sh` : '—'}
+            {limitAbs ? (isCredit ? `Credit $${limitAbs.toFixed(2)}/sh` : `$${limitAbs.toFixed(2)}/sh`) : '—'}
           </div>
         </div>
         <div className="px-3 py-2 text-center">
