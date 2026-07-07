@@ -413,6 +413,8 @@ function StockCard({ r }: { r: any }) {
           )}
         </>
       )}
+      {/* Fill confirmation per card */}
+      <FillButton ticker={ticker} />
     </div>
   )
 }
