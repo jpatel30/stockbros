@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { portfolio, recommendations, alerts as alertsApi, signals, stockRecs } from '@/lib/api'
+import { portfolio, recommendations, alerts as alertsApi, signals, stockRecs, scanStatus } from '@/lib/api'
 import { tierBg, tierColor } from '@/lib/utils'
 import { RefreshCw, TrendingDown, TrendingUp, Minus, Search, RotateCcw, ChevronDown, ChevronUp, Bell, X } from 'lucide-react'
 
@@ -446,6 +446,7 @@ export default function Dashboard() {
   const [sellSigs, setSellSigs]   = useState<any[]>([])
   const [prefs, setPrefs]         = useState<Prefs>(DEFAULT)
   const [stage, setStage]         = useState<'form'|'scanning'|'results'>('form')
+  const [scanProgress, setSP]     = useState<{pct:number,label:string}>({pct:0,label:''})
   const [loadingPort, setLP]      = useState(true)
   const [fills, setFills]         = useState<string[]>([]) // tickers user confirmed filled
   const [checkingFills, setChkF]  = useState(false)
@@ -493,6 +494,17 @@ export default function Dashboard() {
   }, [])
 
   const refreshPort = () => { setRP(true); portfolio.get(true).then(setPort).finally(() => setRP(false)) }
+
+  useEffect(() => {
+    if (stage !== 'scanning') return
+    setSP({pct:0,label:'Starting scan...'})
+    const iv = setInterval(() => {
+      scanStatus().then((s:any) => {
+        if (s.stage !== 'idle') setSP({pct: s.pct, label: s.label})
+      }).catch(() => {})
+    }, 1200)
+    return () => clearInterval(iv)
+  }, [stage])
   const dismissAlert = (id: string) => { alertsApi.dismiss(id); setAlerts(a => a.filter(x => x.id !== id)) }
   const runScan = async () => {
     setStage('scanning')
@@ -725,10 +737,20 @@ export default function Dashboard() {
           )}
 
           {stage === 'scanning' && (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="w-10 h-10 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin mb-4"/>
-              <p className="text-sm text-gray-600">Scanning {prefs.horizon} picks...</p>
-              <p className="text-xs text-gray-400 mt-1">${prefs.budget.toLocaleString()} · {prefs.risk}</p>
+            <div className="flex flex-col items-center justify-center py-16 px-6">
+              <div className="w-full max-w-xs mb-4">
+                <div className="flex justify-between text-xs text-gray-400 mb-1.5">
+                  <span>{scanProgress.label || 'Starting scan...'}</span>
+                  <span>{scanProgress.pct}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gray-800 rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${Math.max(scanProgress.pct, 4)}%` }}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">${prefs.budget.toLocaleString()} · {prefs.risk} · {prefs.horizon}</p>
             </div>
           )}
 

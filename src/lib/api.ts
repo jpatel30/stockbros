@@ -35,6 +35,8 @@ export const portfolio = {
   activeBets: () => api.get('/api/portfolio/active-bets').then(r => r.data),
 }
 
+export const scanStatus = () => api.get('/api/scan/status').then(r => r.data)
+
 export const recommendations = {
   // No scan param = return cached instantly or empty with needs_scan=true
   daily:      (force?: boolean, budget?: number, scanType?: string, horizon?: string) =>
