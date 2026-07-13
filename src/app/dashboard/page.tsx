@@ -497,11 +497,30 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (stage !== 'scanning') return
+    const startedAt = Date.now()
     setSP({pct:0,label:'Starting scan...'})
+
+    // Time-based estimate (~62s typical scan) — keeps the bar visibly
+    // alive even when the browser throttles setInterval on a
+    // backgrounded tab (e.g. while watching Terminal logs). This is a
+    // decorative floor only: real backend progress always wins if
+    // it's further along, so the bar is never dishonest, just never
+    // frozen either.
+    const ESTIMATED_MS = 62000
+    const timeBasedPct = () => Math.min(90, Math.round((Date.now() - startedAt) / ESTIMATED_MS * 90))
+
     const iv = setInterval(() => {
       scanStatus().then((s:any) => {
-        if (s.stage !== 'idle') setSP({pct: s.pct, label: s.label})
-      }).catch(() => {})
+        setSP(prev => {
+          const estimated = timeBasedPct()
+          if (s.stage !== 'idle' && s.pct >= estimated) {
+            return { pct: s.pct, label: s.label }
+          }
+          return { pct: Math.max(prev.pct, estimated), label: prev.label || 'Working...' }
+        })
+      }).catch(() => {
+        setSP(prev => ({ pct: Math.max(prev.pct, timeBasedPct()), label: prev.label || 'Working...' }))
+      })
     }, 1200)
     return () => clearInterval(iv)
   }, [stage])
@@ -745,7 +764,7 @@ export default function Dashboard() {
                 </div>
                 <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gray-800 rounded-full transition-all duration-700 ease-out"
+                    className="h-full bg-gray-800 rounded-full transition-all duration-[1200ms] ease-linear"
                     style={{ width: `${Math.max(scanProgress.pct, 4)}%` }}
                   />
                 </div>
